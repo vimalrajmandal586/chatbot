@@ -1,0 +1,7 @@
+streamlit
+groq
+firebase-admin
+pyrebase4
+streamlit-google-auth
+pandas
+plotly
