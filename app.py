@@ -1,501 +1,389 @@
 import streamlit as st
-import streamlit.components.v1 as components
+from groq import Groq
+import firebase_admin
+from firebase_admin import credentials, firestore
+from datetime import datetime
 
 # Page Config
 st.set_page_config(
-    page_title="Vimal Mandal - AI Creator",
-    page_icon="🤖",
-    layout="wide",
+    page_title="Chat - Vimal AI",
+    page_icon="💬",
+    layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# Hide Streamlit elements and remove ALL spacing
+# Custom CSS with Glass Morphism (FIXED INPUTS)
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * { font-family: 'Inter', sans-serif; }
+    
+    [data-testid="stSidebar"] {display: none;}
+    [data-testid="collapsedControl"] {display: none;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    [data-testid="collapsedControl"] {display: none;}
-    [data-testid="stSidebar"] {display: none;}
     
     .stApp {
-        background: #0C0C0C;
+        background: #000000;
     }
     
-    .main .block-container {
-        padding: 0 !important;
-        max-width: 100% !important;
-        margin: 0 !important;
+    .video-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        overflow: hidden;
     }
     
-    .stApp > header {display: none;}
-    
-    /* Remove iframe spacing */
-    iframe {
-        display: block !important;
-        margin: 0 !important;
-        padding: 0 !important;
+    .video-bg::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, 
+            rgba(124, 58, 237, 0.3),
+            rgba(0, 0, 0, 0.7),
+            rgba(0, 245, 255, 0.2));
+        z-index: 1;
+        animation: gradientShift 10s ease infinite;
     }
     
-    /* Remove all element gaps */
-    [data-testid="stVerticalBlock"] {
-        gap: 0 !important;
+    @keyframes gradientShift {
+        0%, 100% { background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(0, 0, 0, 0.7), rgba(0, 245, 255, 0.2)); }
+        50% { background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(0, 0, 0, 0.7), rgba(255, 0, 168, 0.2)); }
     }
     
-    [data-testid="element-container"] {
-        margin: 0 !important;
+    .login-heading {
+        font-family: 'Instrument Serif', serif;
+        font-size: 64px;
+        color: white;
+        text-align: center;
+        margin-bottom: 30px;
+        letter-spacing: -0.02em;
+        line-height: 1;
     }
     
-    /* Style the floating button */
-    .stButton > button {
-        background: linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%) !important;
-        color: white !important;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        font-weight: 600 !important;
-        padding: 18px 60px !important;
+    .login-subtitle {
+        color: rgba(255, 255, 255, 0.7);
+        text-align: center;
+        font-size: 16px;
+        margin-bottom: 40px;
+    }
+    
+    .chat-header {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 20px 30px;
+        border-radius: 25px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    }
+    
+    .chat-title {
+        font-family: 'Instrument Serif', serif;
+        font-size: 32px;
+        color: white;
+        margin-bottom: 8px;
+    }
+    
+    .user-badge {
+        background: rgba(124, 58, 237, 0.2);
+        border: 1px solid rgba(124, 58, 237, 0.4);
+        border-radius: 20px;
+        padding: 6px 16px;
+        color: #fff;
+        font-size: 13px;
+        display: inline-block;
+    }
+    
+    /* FIXED INPUT FIELDS - WHITE TEXT VISIBLE */
+    .stTextInput > div > div > input {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 50px !important;
-        border: 2px solid white !important;
-        font-size: 18px !important;
-        box-shadow: 0 0 40px rgba(181, 1, 167, 0.5);
-        font-family: 'Kanit', sans-serif !important;
-        margin-top: -100px !important;
-        position: relative;
-        z-index: 1000;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        padding: 15px 25px !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        backdrop-filter: blur(10px);
+        caret-color: white !important;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border: 2px solid rgba(124, 58, 237, 0.8) !important;
+        box-shadow: 0 0 20px rgba(124, 58, 237, 0.4) !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }
+    
+    .stTextInput > div > div > input::placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+        font-weight: 400 !important;
+    }
+    
+    .stTextInput label {
+        color: white !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 50px !important;
+        color: white !important;
+        font-weight: 500 !important;
+        padding: 12px 30px !important;
+        transition: all 0.3s ease;
     }
     
     .stButton > button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 60px rgba(181, 1, 167, 0.8);
+        background: rgba(255, 255, 255, 0.2) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3);
     }
+    
+    /* Chat messages */
+    [data-testid="stChatMessage"] {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px !important;
+        padding: 15px !important;
+        margin: 10px 0 !important;
+    }
+    
+    /* Chat input - WHITE TEXT */
+    [data-testid="stChatInput"] textarea {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        color: white !important;
+        -webkit-text-fill-color: white !important;
+        backdrop-filter: blur(20px);
+    }
+    
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+    
+    /* All text white */
+    .stMarkdown, p, h1, h2, h3, h4, h5, h6 {
+        color: white !important;
+    }
+    
+    /* Hide anchor link icons */
+    .stMarkdown a {
+        display: none !important;
+    }
+    
+    h1 a, h2 a, h3 a {
+        display: none !important;
+    }
+    
     </style>
 """, unsafe_allow_html=True)
 
-# Hero HTML
-hero_html = """
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800;900&display=swap');
+# Animated Background
+st.markdown('<div class="video-bg"></div>', unsafe_allow_html=True)
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Kanit', sans-serif;
-}
+# Initialize Firebase
+def init_firebase():
+    if not firebase_admin._apps:
+        firebase_config = {
+            "type": "service_account",
+            "project_id": st.secrets["firebase"]["projectId"],
+            "private_key_id": st.secrets["firebase"]["private_key_id"],
+            "private_key": st.secrets["firebase"]["private_key"],
+            "client_email": st.secrets["firebase"]["client_email"],
+            "client_id": st.secrets["firebase"]["client_id"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+        }
+        cred = credentials.Certificate(firebase_config)
+        firebase_admin.initialize_app(cred)
+    return firestore.client()
 
-body, html {
-    background: #0C0C0C;
-    color: white;
-    overflow-x: hidden;
-    margin: 0;
-    padding: 0;
-}
+# Login Section
+def login_section():
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown('<h1 class="login-heading">Built for the curious</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="login-subtitle">Login to start your AI journey with Vimal\'s personalized chatbot</p>', unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        email = st.text_input("Email", placeholder="Enter your Gmail", label_visibility="collapsed", key="email_input")
+        name = st.text_input("Name", placeholder="Enter your Name", label_visibility="collapsed", key="name_input")
 
-/* HERO SECTION */
-.hero-container {
-    min-height: 100vh;
-    background: #0C0C0C;
-    display: flex;
-    flex-direction: column;
-    overflow-x: clip;
-    position: relative;
-}
+        if st.button("🚀 Login & Start Chatting", use_container_width=True):
+            if email and "@gmail.com" in email and name:
+                st.session_state.user_email = email
+                st.session_state.user_name = name
+                st.session_state.logged_in = True
+                st.session_state.messages = []
+                st.session_state.chat_loaded = False
 
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    padding: 30px 40px;
-    color: #D7E2EA;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-weight: 500;
-    font-size: 1.2rem;
-    z-index: 100;
-}
+                try:
+                    db = init_firebase()
+                    user_ref = db.collection("users").document(email)
+                    user_data = user_ref.get()
 
-.navbar a {
-    color: #D7E2EA;
-    text-decoration: none;
-    transition: opacity 0.2s;
-    cursor: pointer;
-}
+                    if not user_data.exists:
+                        user_ref.set({
+                            "email": email,
+                            "name": name,
+                            "first_login": datetime.now().isoformat(),
+                            "last_active": datetime.now().isoformat(),
+                            "total_messages": 0
+                        })
+                    else:
+                        user_ref.update({"last_active": datetime.now().isoformat()})
+                except Exception as e:
+                    st.warning(f"Database issue: {e}")
 
-.navbar a:hover {
-    opacity: 0.7;
-}
+                st.rerun()
+            else:
+                if not email or "@gmail.com" not in email:
+                    st.error("❌ Please enter a valid Gmail ID")
+                if not name:
+                    st.error("❌ Please enter your name")
 
-.hero-heading {
-    font-size: 17vw;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -0.05em;
-    line-height: 0.9;
-    text-align: center;
-    background: linear-gradient(180deg, #646973 0%, #BBCCD7 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-top: -30px;
-    white-space: nowrap;
-    animation: fadeUp 1s ease forwards;
-    opacity: 0;
-    animation-delay: 0.3s;
-}
+# Chat Section
+def chat_section():
+    db = init_firebase()
+    email = st.session_state.user_email
+    name = st.session_state.user_name
 
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+    st.markdown(f"""
+        <div class="chat-header">
+            <div class="chat-title">💬 Vimal AI</div>
+            <div class="user-badge">👤 {name} | {email}</div>
+        </div>
+    """, unsafe_allow_html=True)
 
-.portrait {
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    transform: translateX(-50%);
-    width: 480px;
-    z-index: 10;
-    border-radius: 30px;
-    transition: transform 0.4s ease-out;
-    animation: fadeUp 1s ease forwards;
-    opacity: 0;
-    animation-delay: 0.6s;
-}
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        if st.button("🆕 New Chat", use_container_width=True):
+            st.session_state.messages = []
+            st.session_state.chat_loaded = False
+            st.rerun()
+    with col2:
+        if st.button("🏠 Home", use_container_width=True):
+            st.switch_page("app.py")
+    with col3:
+        if st.button("🚪 Logout", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.user_email = None
+            st.session_state.user_name = None
+            st.session_state.messages = []
+            st.session_state.chat_loaded = False
+            st.rerun()
 
-.portrait:hover {
-    transform: translateX(-50%) scale(1.05);
-}
+    st.markdown("---")
 
-.bottom-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    padding: 0 40px 50px 40px;
-    margin-top: auto;
-    position: relative;
-    z-index: 20;
-}
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-.bottom-text {
-    color: #D7E2EA;
-    font-weight: 300;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 1.2rem;
-    max-width: 280px;
-    line-height: 1.3;
-    animation: fadeUp 1s ease forwards;
-    opacity: 0;
-    animation-delay: 0.9s;
-}
-
-.contact-btn {
-    background: linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%);
-    color: white;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    font-weight: 500;
-    padding: 16px 48px;
-    border-radius: 50px;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    box-shadow: 
-        inset 0 4px 4px rgba(181, 1, 167, 0.25),
-        inset 4px 4px 12px #7721B1,
-        0 0 0 2px white;
-    outline-offset: -3px;
-    font-family: 'Kanit', sans-serif;
-    text-decoration: none;
-    display: inline-block;
-    transition: transform 0.3s ease;
-    animation: fadeUp 1s ease forwards;
-    opacity: 0;
-    animation-delay: 0.9s;
-}
-
-.contact-btn:hover {
-    transform: scale(1.05);
-}
-
-/* MARQUEE */
-.marquee-section {
-    padding: 40px 0;
-    background: #0C0C0C;
-    overflow: hidden;
-}
-
-.marquee {
-    display: flex;
-    gap: 20px;
-    animation: scroll 30s linear infinite;
-    width: max-content;
-}
-
-.marquee-2 {
-    animation: scroll-reverse 25s linear infinite;
-    margin-top: 20px;
-}
-
-@keyframes scroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-}
-
-@keyframes scroll-reverse {
-    0% { transform: translateX(-50%); }
-    100% { transform: translateX(0); }
-}
-
-.marquee-tile {
-    width: 380px;
-    height: 240px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.5rem;
-    font-weight: 600;
-    flex-shrink: 0;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.marquee-tile-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
-.marquee-tile-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
-.marquee-tile-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-.marquee-tile-4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-.marquee-tile-5 { background: linear-gradient(135deg, #fa709a, #fee140); }
-.marquee-tile-6 { background: linear-gradient(135deg, #30cfd0, #330867); }
-
-/* ABOUT SECTION */
-.about-section {
-    padding: 80px 40px;
-    background: #0C0C0C;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 40px;
-    position: relative;
-}
-
-.about-heading {
-    font-size: clamp(3rem, 12vw, 160px);
-    font-weight: 900;
-    text-transform: uppercase;
-    background: linear-gradient(180deg, #646973 0%, #BBCCD7 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    text-align: center;
-}
-
-.about-text {
-    color: #D7E2EA;
-    font-weight: 400;
-    text-align: center;
-    line-height: 1.7;
-    max-width: 750px;
-    font-size: clamp(1rem, 1.5vw, 1.3rem);
-    padding: 0 20px;
-}
-
-/* SERVICES SECTION */
-.services-section {
-    background: #FFFFFF;
-    border-top-left-radius: 60px;
-    border-top-right-radius: 60px;
-    padding: 80px 40px;
-    color: #0C0C0C;
-}
-
-.services-heading {
-    font-size: clamp(3rem, 12vw, 160px);
-    font-weight: 900;
-    text-transform: uppercase;
-    color: #0C0C0C;
-    text-align: center;
-    margin-bottom: 60px;
-    line-height: 1;
-}
-
-.service-list {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.service-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 40px;
-    padding: 30px 0;
-    border-bottom: 1px solid rgba(12, 12, 12, 0.15);
-}
-
-.service-num {
-    font-size: clamp(3rem, 8vw, 100px);
-    font-weight: 900;
-    color: #0C0C0C;
-    min-width: 150px;
-    line-height: 1;
-}
-
-.service-content {
-    flex: 1;
-}
-
-.service-name {
-    font-size: clamp(1.2rem, 2.5vw, 2rem);
-    font-weight: 500;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-}
-
-.service-desc {
-    font-size: clamp(0.9rem, 1.5vw, 1.2rem);
-    font-weight: 300;
-    line-height: 1.6;
-    opacity: 0.6;
-    max-width: 700px;
-}
-
-/* FOOTER */
-.footer-section {
-    background: #0C0C0C;
-    padding: 40px;
-    text-align: center;
-    color: #646973;
-    font-size: 0.9rem;
-}
-
-</style>
-</head>
-<body>
-
-<!-- HERO SECTION -->
-<div class="hero-container">
-    <nav class="navbar">
-        <a>About</a>
-        <a>Skills</a>
-        <a>Projects</a>
-        <a>Contact</a>
-    </nav>
+    system_prompt = f"""You are an expert AI assistant built by Vimal Mandal as a personal AI project.
     
-    <h1 class="hero-heading">Hi, i&apos;m vimal</h1>
+    Your expertise covers:
+    - Artificial Intelligence and Machine Learning
+    - Deep Learning and Neural Networks
+    - Computer Science and Programming
+    - Data Science and Analytics
+    - Web Development
+    - Mathematics and Statistics
+    - General Knowledge
     
-    <img class="portrait" 
-         src="https://i.ibb.co/Vcj9MQYr/Whats-App-Image-2026-04-05-at-8-49-04-PM.jpg" 
-         alt="Vimal Mandal"/>
+    User: {name} ({email})
     
-    <div class="bottom-bar">
-        <p class="bottom-text">An AI creator driven by building intelligent and unforgettable projects</p>
-        <button class="contact-btn">Get In Touch</button>
-    </div>
-</div>
+    Be intelligent, helpful, and clear. Think step by step. Always give your best answer."""
 
-<!-- MARQUEE -->
-<div class="marquee-section">
-    <div class="marquee">
-        <div class="marquee-tile marquee-tile-1">🤖 AI Chatbot</div>
-        <div class="marquee-tile marquee-tile-2">🧠 Machine Learning</div>
-        <div class="marquee-tile marquee-tile-3">⚡ Llama 3.3 70B</div>
-        <div class="marquee-tile marquee-tile-4">💬 Smart Chat</div>
-        <div class="marquee-tile marquee-tile-5">🚀 Fast Response</div>
-        <div class="marquee-tile marquee-tile-6">🔒 Secure</div>
-        <div class="marquee-tile marquee-tile-1">🤖 AI Chatbot</div>
-        <div class="marquee-tile marquee-tile-2">🧠 Machine Learning</div>
-        <div class="marquee-tile marquee-tile-3">⚡ Llama 3.3 70B</div>
-        <div class="marquee-tile marquee-tile-4">💬 Smart Chat</div>
-        <div class="marquee-tile marquee-tile-5">🚀 Fast Response</div>
-        <div class="marquee-tile marquee-tile-6">🔒 Secure</div>
-    </div>
-    <div class="marquee marquee-2">
-        <div class="marquee-tile marquee-tile-6">🌟 Powerful</div>
-        <div class="marquee-tile marquee-tile-5">📊 Analytics</div>
-        <div class="marquee-tile marquee-tile-4">🎯 Accurate</div>
-        <div class="marquee-tile marquee-tile-3">💡 Innovative</div>
-        <div class="marquee-tile marquee-tile-2">🔥 Modern</div>
-        <div class="marquee-tile marquee-tile-1">⭐ Premium</div>
-        <div class="marquee-tile marquee-tile-6">🌟 Powerful</div>
-        <div class="marquee-tile marquee-tile-5">📊 Analytics</div>
-        <div class="marquee-tile marquee-tile-4">🎯 Accurate</div>
-        <div class="marquee-tile marquee-tile-3">💡 Innovative</div>
-        <div class="marquee-tile marquee-tile-2">🔥 Modern</div>
-        <div class="marquee-tile marquee-tile-1">⭐ Premium</div>
-    </div>
-</div>
+    if not st.session_state.get("chat_loaded", False):
+        st.session_state.messages = [{"role": "system", "content": system_prompt}]
+        try:
+            chat_ref = db.collection("chats").document(email).collection("messages")
+            past_chats = chat_ref.order_by("timestamp").stream()
+            loaded_messages = []
+            for chat in past_chats:
+                chat_data = chat.to_dict()
+                loaded_messages.append({
+                    "role": chat_data["role"],
+                    "content": chat_data["content"]
+                })
+            if loaded_messages:
+                st.session_state.messages.extend(loaded_messages)
+                st.toast(f"📜 Loaded {len(loaded_messages)} previous messages!", icon="✅")
+        except Exception as e:
+            pass
+        st.session_state.chat_loaded = True
 
-<!-- ABOUT SECTION -->
-<div class="about-section">
-    <h2 class="about-heading">About Me</h2>
-    <p class="about-text">
-        Hello! My name is Vimal Mandal. Having just completed my 12th-grade education, 
-        I built this website from scratch to showcase my journey in coding, featuring 
-        Python-to-web conversions and interactive interfaces. Please explore the projects, 
-        have a try, and see how they work firsthand.
-    </p>
-</div>
+    if not st.session_state.messages:
+        st.session_state.messages = [{"role": "system", "content": system_prompt}]
 
-<!-- SERVICES SECTION -->
-<div class="services-section">
-    <h2 class="services-heading">Services</h2>
-    <div class="service-list">
-        <div class="service-item">
-            <div class="service-num">01</div>
-            <div class="service-content">
-                <div class="service-name">AI Chatbot</div>
-                <div class="service-desc">Intelligent conversational AI powered by Llama 3.3 70B model that can answer any question with accuracy and context.</div>
-            </div>
-        </div>
-        <div class="service-item">
-            <div class="service-num">02</div>
-            <div class="service-content">
-                <div class="service-name">Smart Memory</div>
-                <div class="service-desc">Advanced memory system that remembers your past conversations and provides contextual responses across sessions.</div>
-            </div>
-        </div>
-        <div class="service-item">
-            <div class="service-num">03</div>
-            <div class="service-content">
-                <div class="service-name">Expert Knowledge</div>
-                <div class="service-desc">Domain expertise covering AI, Machine Learning, Programming, Data Science, Mathematics, and general knowledge.</div>
-            </div>
-        </div>
-        <div class="service-item">
-            <div class="service-num">04</div>
-            <div class="service-content">
-                <div class="service-name">Secure Login</div>
-                <div class="service-desc">Safe Gmail-based authentication with encrypted user data storage on Firebase cloud database.</div>
-            </div>
-        </div>
-        <div class="service-item">
-            <div class="service-num">05</div>
-            <div class="service-content">
-                <div class="service-name">Lightning Fast</div>
-                <div class="service-desc">Powered by Groq's ultra-fast inference engine delivering instant responses with streaming output.</div>
-            </div>
-        </div>
-    </div>
-</div>
+    for message in st.session_state.messages:
+        if message["role"] != "system":
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-<!-- FOOTER -->
-<div class="footer-section">
-    © 2024 Vimal Mandal | Built with passion using Python, Streamlit & AI
-</div>
+    if prompt := st.chat_input("Ask me anything..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-</body>
-</html>
-"""
+        with st.chat_message("assistant"):
+            response_placeholder = st.empty()
+            full_response = ""
+            try:
+                completion = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=st.session_state.messages,
+                    temperature=0.7,
+                    max_tokens=2048,
+                    stream=True,
+                )
+                for chunk in completion:
+                    if chunk.choices[0].delta.content:
+                        full_response += chunk.choices[0].delta.content
+                        response_placeholder.markdown(full_response + "▌")
+                response_placeholder.markdown(full_response)
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+                full_response = "Sorry, error occurred. Please try again."
 
-# Render the HTML (exact height to remove blank space)
-components.html(hero_html, height=2150, scrolling=True)
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-# Floating Start Chat Button
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
-    if st.button("🚀 START CHATTING NOW", use_container_width=True):
-        st.switch_page("pages/2_Chat.py")
+        try:
+            chat_ref = db.collection("chats").document(email).collection("messages")
+            chat_ref.add({"role": "user", "content": prompt, "timestamp": datetime.now().isoformat()})
+            chat_ref.add({"role": "assistant", "content": full_response, "timestamp": datetime.now().isoformat()})
+            user_ref = db.collection("users").document(email)
+            user_data = user_ref.get()
+            if user_data.exists:
+                current_count = user_data.to_dict().get("total_messages", 0)
+                user_ref.update({
+                    "total_messages": current_count + 1,
+                    "last_active": datetime.now().isoformat()
+                })
+        except Exception as e:
+            pass
+
+# Main Logic
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if st.session_state.logged_in:
+    chat_section()
+else:
+    login_section()
