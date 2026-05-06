@@ -146,9 +146,10 @@ def chat_section():
             st.session_state.messages = []
             st.session_state.chat_loaded = False
             st.rerun()
-    with col2:
-        if st.button("🏠 Home", use_container_width=True):
-            st.switch_page("app.py")
+   with col2:
+    if st.button("🏠 Home", use_container_width=True):
+        st.session_state.logged_in = False
+        st.switch_page("app.py")
     with col3:
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.logged_in = False
