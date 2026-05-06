@@ -4,23 +4,30 @@ from firebase_admin import credentials, firestore
 from datetime import datetime
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
-# Page Config
+# Page Config - HIDDEN from sidebar
 st.set_page_config(
     page_title="Admin - Vimal AI",
     page_icon="👑",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS
+# Custom CSS - Hide sidebar completely
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
     * { font-family: 'Poppins', sans-serif; }
     
+    /* Hide sidebar */
+    [data-testid="stSidebar"] {display: none;}
+    [data-testid="collapsedControl"] {display: none;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
     .admin-header {
-        background: linear-gradient(90deg, #7c3aed, #3b82f6);
+        background: linear-gradient(90deg, #7c3aed, #00f5ff);
         padding: 25px;
         border-radius: 15px;
         margin-bottom: 30px;
@@ -28,17 +35,32 @@ st.markdown("""
         color: white;
     }
     
-    .metric-card {
-        background: rgba(124, 58, 237, 0.1);
-        border: 1px solid rgba(124, 58, 237, 0.3);
-        border-radius: 15px;
-        padding: 20px;
+    .login-box {
+        max-width: 400px;
+        margin: 50px auto;
+        padding: 40px;
+        background: rgba(124, 58, 237, 0.05);
+        border: 1px solid rgba(124, 58, 237, 0.2);
+        border-radius: 20px;
         text-align: center;
+    }
+    
+    .login-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #7c3aed;
+        margin-bottom: 10px;
+    }
+    
+    .login-subtitle {
+        font-size: 14px;
+        color: #94a3b8;
+        margin-bottom: 25px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Admin Password Protection
+# Admin Password
 ADMIN_PASSWORD = "vimal@admin2024"
 
 def init_firebase():
@@ -61,14 +83,15 @@ def admin_login():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("""
-            <div style="text-align: center; padding: 50px 0;">
-                <h1>👑 Admin Login</h1>
-                <p style="color: #94a3b8;">Only Vimal Mandal can access this page</p>
+            <div class="login-box">
+                <div class="login-title">👑 Admin Login</div>
+                <div class="login-subtitle">Only Vimal Mandal can access this page</div>
             </div>
         """, unsafe_allow_html=True)
 
-        password = st.text_input("🔐 Admin Password", type="password")
-        if st.button("Login as Admin", use_container_width=True):
+        password = st.text_input("🔐 Password", type="password", label_visibility="collapsed", placeholder="Enter Admin Password")
+        
+        if st.button("Login as Admin", use_container_width=True, type="primary"):
             if password == ADMIN_PASSWORD:
                 st.session_state.admin_logged_in = True
                 st.rerun()
@@ -86,12 +109,10 @@ def admin_dashboard():
         </div>
     """, unsafe_allow_html=True)
 
-    # Logout
-    if st.button("🚪 Logout Admin"):
+    if st.button("🚪 Logout"):
         st.session_state.admin_logged_in = False
         st.rerun()
 
-    # Fetch all users from Firebase
     try:
         users_ref = db.collection("users").stream()
         users_list = []
@@ -101,7 +122,6 @@ def admin_dashboard():
         total_users = len(users_list)
         total_messages = sum([u.get("total_messages", 0) for u in users_list])
 
-        # Top Metrics
         st.markdown("### 📊 Overall Statistics")
         col1, col2, col3, col4 = st.columns(4)
 
@@ -115,48 +135,33 @@ def admin_dashboard():
             st.metric("🟢 Active Today", active_today)
         with col4:
             avg_messages = round(total_messages / total_users, 1) if total_users > 0 else 0
-            st.metric("📈 Avg Messages/User", avg_messages)
+            st.metric("📈 Avg Messages", avg_messages)
 
         st.markdown("---")
 
-        # Users Table
         st.markdown("### 👥 All Users")
         if users_list:
             df = pd.DataFrame(users_list)
-            df = df[["name", "email", "total_messages", "first_login", "last_active"]]
-            df.columns = ["Name", "Gmail", "Messages", "First Login", "Last Active"]
-            st.dataframe(df, use_container_width=True)
+            display_df = df[["name", "email", "total_messages", "first_login", "last_active"]].copy()
+            display_df.columns = ["Name", "Gmail", "Messages", "First Login", "Last Active"]
+            st.dataframe(display_df, use_container_width=True)
 
-            # Download button
-            csv = df.to_csv(index=False)
-            st.download_button(
-                "📥 Download User Data",
-                csv,
-                "vimal_ai_users.csv",
-                "text/csv"
-            )
+            csv = display_df.to_csv(index=False)
+            st.download_button("📥 Download User Data", csv, "users.csv", "text/csv")
         else:
-            st.info("No users yet. Share your chatbot link!")
+            st.info("No users yet.")
 
         st.markdown("---")
 
-        # Chart - Messages per User
         if users_list and total_messages > 0:
             st.markdown("### 📊 Messages Per User")
             df_chart = pd.DataFrame(users_list)
-            fig = px.bar(
-                df_chart,
-                x="name",
-                y="total_messages",
-                color="total_messages",
-                color_continuous_scale="Viridis",
-                title="Messages per User"
-            )
+            fig = px.bar(df_chart, x="name", y="total_messages",
+                         color="total_messages", color_continuous_scale="Viridis")
             st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("---")
 
-        # View Individual Chat History
         st.markdown("### 💬 View User Chat History")
         if users_list:
             user_emails = [u["email"] for u in users_list]
@@ -166,33 +171,20 @@ def admin_dashboard():
                 chat_ref = db.collection("chats").document(selected_user).collection("messages")
                 chats = chat_ref.order_by("timestamp").stream()
 
-                chat_list = []
-                for chat in chats:
-                    chat_list.append(chat.to_dict())
+                chat_list = [chat.to_dict() for chat in chats]
 
                 if chat_list:
                     st.markdown(f"**Chat history for: {selected_user}**")
                     for chat in chat_list:
                         role = "🧑 User" if chat["role"] == "user" else "🤖 AI"
-                        st.markdown(f"**{role}:** {chat['content']}")
-                        st.markdown(f"*{chat.get('timestamp', '')}*")
-                        st.markdown("---")
+                        with st.expander(f"{role}: {chat['content'][:80]}..."):
+                            st.markdown(chat['content'])
+                            st.caption(chat.get('timestamp', ''))
                 else:
                     st.info("No chat history for this user")
 
-        st.markdown("---")
-
-        # Upload Your Photo from Admin Panel
-        st.markdown("### 🖼️ Update Your Profile Photo")
-        uploaded_file = st.file_uploader("Upload your photo", type=["jpg", "jpeg", "png"])
-        if uploaded_file:
-            with open("assets/photo.jpg", "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            st.success("✅ Photo updated successfully! Refresh the main page to see it.")
-
     except Exception as e:
-        st.error(f"Database error: {str(e)}")
-        st.info("Make sure Firebase is properly configured in secrets.toml")
+        st.error(f"Error: {str(e)}")
 
 # Main Logic
 if "admin_logged_in" not in st.session_state:
