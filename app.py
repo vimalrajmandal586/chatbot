@@ -1,389 +1,248 @@
 import streamlit as st
-from groq import Groq
-import firebase_admin
-from firebase_admin import credentials, firestore
-from datetime import datetime
+import streamlit.components.v1 as components
 
 # Page Config
 st.set_page_config(
-    page_title="Chat - Vimal AI",
-    page_icon="💬",
-    layout="centered",
+    page_title="Vimal Mandal - AI Project",
+    page_icon="🤖",
+    layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS with Glass Morphism (FIXED INPUTS)
+# Hide everything
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    * { font-family: 'Inter', sans-serif; }
-    
-    [data-testid="stSidebar"] {display: none;}
-    [data-testid="collapsedControl"] {display: none;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    
-    .stApp {
-        background: #000000;
-    }
-    
-    .video-bg {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        overflow: hidden;
-    }
-    
-    .video-bg::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, 
-            rgba(124, 58, 237, 0.3),
-            rgba(0, 0, 0, 0.7),
-            rgba(0, 245, 255, 0.2));
-        z-index: 1;
-        animation: gradientShift 10s ease infinite;
-    }
-    
-    @keyframes gradientShift {
-        0%, 100% { background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(0, 0, 0, 0.7), rgba(0, 245, 255, 0.2)); }
-        50% { background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(0, 0, 0, 0.7), rgba(255, 0, 168, 0.2)); }
-    }
-    
-    .login-heading {
-        font-family: 'Instrument Serif', serif;
-        font-size: 64px;
-        color: white;
-        text-align: center;
-        margin-bottom: 30px;
-        letter-spacing: -0.02em;
-        line-height: 1;
-    }
-    
-    .login-subtitle {
-        color: rgba(255, 255, 255, 0.7);
-        text-align: center;
-        font-size: 16px;
-        margin-bottom: 40px;
-    }
-    
-    .chat-header {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 20px 30px;
-        border-radius: 25px;
-        margin-bottom: 20px;
-        text-align: center;
-        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
-    }
-    
-    .chat-title {
-        font-family: 'Instrument Serif', serif;
-        font-size: 32px;
-        color: white;
-        margin-bottom: 8px;
-    }
-    
-    .user-badge {
-        background: rgba(124, 58, 237, 0.2);
-        border: 1px solid rgba(124, 58, 237, 0.4);
-        border-radius: 20px;
-        padding: 6px 16px;
-        color: #fff;
-        font-size: 13px;
-        display: inline-block;
-    }
-    
-    /* FIXED INPUT FIELDS - WHITE TEXT VISIBLE */
-    .stTextInput > div > div > input {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border: 2px solid rgba(255, 255, 255, 0.3) !important;
-        border-radius: 50px !important;
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-        padding: 15px 25px !important;
-        font-size: 16px !important;
-        font-weight: 500 !important;
-        backdrop-filter: blur(10px);
-        caret-color: white !important;
-    }
-    
-    .stTextInput > div > div > input:focus {
-        background: rgba(255, 255, 255, 0.15) !important;
-        border: 2px solid rgba(124, 58, 237, 0.8) !important;
-        box-shadow: 0 0 20px rgba(124, 58, 237, 0.4) !important;
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-    }
-    
-    .stTextInput > div > div > input::placeholder {
-        color: rgba(255, 255, 255, 0.6) !important;
-        font-weight: 400 !important;
-    }
-    
-    .stTextInput label {
-        color: white !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Buttons */
-    .stButton > button {
-        background: rgba(255, 255, 255, 0.1) !important;
-        backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 50px !important;
-        color: white !important;
-        font-weight: 500 !important;
-        padding: 12px 30px !important;
-        transition: all 0.3s ease;
-    }
-    
-    .stButton > button:hover {
-        background: rgba(255, 255, 255, 0.2) !important;
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3);
-    }
-    
-    /* Chat messages */
-    [data-testid="stChatMessage"] {
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px !important;
-        padding: 15px !important;
-        margin: 10px 0 !important;
-    }
-    
-    /* Chat input - WHITE TEXT */
-    [data-testid="stChatInput"] textarea {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        color: white !important;
-        -webkit-text-fill-color: white !important;
-        backdrop-filter: blur(20px);
-    }
-    
-    [data-testid="stChatInput"] textarea::placeholder {
-        color: rgba(255, 255, 255, 0.5) !important;
-    }
-    
-    /* All text white */
-    .stMarkdown, p, h1, h2, h3, h4, h5, h6 {
-        color: white !important;
-    }
-    
-    /* Hide anchor link icons */
-    .stMarkdown a {
-        display: none !important;
-    }
-    
-    h1 a, h2 a, h3 a {
-        display: none !important;
-    }
-    
+    [data-testid="collapsedControl"] {display: none;}
+    [data-testid="stSidebar"] {display: none;}
+    .stApp {background: #000000;}
+    .main .block-container {padding: 0 !important; max-width: 100% !important;}
     </style>
 """, unsafe_allow_html=True)
 
-# Animated Background
-st.markdown('<div class="video-bg"></div>', unsafe_allow_html=True)
+# Full Page HTML
+page_html = """
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
-# Initialize Firebase
-def init_firebase():
-    if not firebase_admin._apps:
-        firebase_config = {
-            "type": "service_account",
-            "project_id": st.secrets["firebase"]["projectId"],
-            "private_key_id": st.secrets["firebase"]["private_key_id"],
-            "private_key": st.secrets["firebase"]["private_key"],
-            "client_email": st.secrets["firebase"]["client_email"],
-            "client_id": st.secrets["firebase"]["client_id"],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        }
-        cred = credentials.Certificate(firebase_config)
-        firebase_admin.initialize_app(cred)
-    return firestore.client()
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
 
-# Login Section
-def login_section():
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown('<h1 class="login-heading">Built for the curious</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="login-subtitle">Login to start your AI journey with Vimal\'s personalized chatbot</p>', unsafe_allow_html=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        email = st.text_input("Email", placeholder="Enter your Gmail", label_visibility="collapsed", key="email_input")
-        name = st.text_input("Name", placeholder="Enter your Name", label_visibility="collapsed", key="name_input")
+body {
+    background: #000;
+    overflow-x: hidden;
+}
 
-        if st.button("🚀 Login & Start Chatting", use_container_width=True):
-            if email and "@gmail.com" in email and name:
-                st.session_state.user_email = email
-                st.session_state.user_name = name
-                st.session_state.logged_in = True
-                st.session_state.messages = []
-                st.session_state.chat_loaded = False
+.hero-section {
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)), 
+                url('https://img.freepik.com/premium-photo/woman-standing-top-mountain-illustration-futuristic-world-with-sunset-sky_916191-39663.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+}
 
-                try:
-                    db = init_firebase()
-                    user_ref = db.collection("users").document(email)
-                    user_data = user_ref.get()
+.profile-img {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    border: 4px solid #00f5ff;
+    object-fit: cover;
+    margin-bottom: 25px;
+    box-shadow: 0 0 40px rgba(0, 245, 255, 0.5), 0 0 80px rgba(124, 58, 237, 0.3);
+    animation: pulse-glow 3s ease-in-out infinite;
+}
 
-                    if not user_data.exists:
-                        user_ref.set({
-                            "email": email,
-                            "name": name,
-                            "first_login": datetime.now().isoformat(),
-                            "last_active": datetime.now().isoformat(),
-                            "total_messages": 0
-                        })
-                    else:
-                        user_ref.update({"last_active": datetime.now().isoformat()})
-                except Exception as e:
-                    st.warning(f"Database issue: {e}")
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 40px rgba(0, 245, 255, 0.5); }
+    50% { box-shadow: 0 0 60px rgba(0, 245, 255, 0.8), 0 0 100px rgba(124, 58, 237, 0.5); }
+}
 
-                st.rerun()
-            else:
-                if not email or "@gmail.com" not in email:
-                    st.error("❌ Please enter a valid Gmail ID")
-                if not name:
-                    st.error("❌ Please enter your name")
+.hero-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 55px;
+    font-weight: 900;
+    background: linear-gradient(90deg, #00f5ff, #7c3aed, #ff6b6b, #00f5ff);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-flow 4s ease infinite;
+    margin-bottom: 10px;
+}
 
-# Chat Section
-def chat_section():
-    db = init_firebase()
-    email = st.session_state.user_email
-    name = st.session_state.user_name
+@keyframes gradient-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
 
-    st.markdown(f"""
-        <div class="chat-header">
-            <div class="chat-title">💬 Vimal AI</div>
-            <div class="user-badge">👤 {name} | {email}</div>
+.hero-subtitle {
+    font-size: 20px;
+    color: #00f5ff;
+    font-weight: 300;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    margin-bottom: 25px;
+}
+
+.hero-desc {
+    font-size: 17px;
+    color: #c0c0c0;
+    max-width: 750px;
+    line-height: 1.8;
+    margin-bottom: 35px;
+}
+
+.stats-container {
+    display: flex;
+    gap: 50px;
+    margin: 25px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.stat-item { text-align: center; }
+
+.stat-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    color: #00f5ff;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.features-container {
+    display: flex;
+    gap: 20px;
+    margin: 35px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.feature-card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 245, 255, 0.2);
+    border-radius: 20px;
+    padding: 25px 20px;
+    width: 200px;
+    text-align: center;
+    transition: all 0.4s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    border-color: #00f5ff;
+    box-shadow: 0 20px 40px rgba(0, 245, 255, 0.2);
+}
+
+.feature-icon { font-size: 35px; margin-bottom: 12px; }
+.feature-title { font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 6px; }
+.feature-text { font-size: 13px; color: #94a3b8; line-height: 1.5; }
+
+.footer-text {
+    margin-top: 40px;
+    color: #475569;
+    font-size: 13px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="hero-section">
+
+    <img class="profile-img" 
+         src="https://i.ibb.co/Vcj9MQYr/Whats-App-Image-2026-04-05-at-8-49-04-PM.jpg" 
+         alt="Vimal Mandal"/>
+
+    <div class="hero-name">VIMAL MANDAL</div>
+
+    <div class="hero-subtitle">AI Developer &#8226; Innovator &#8226; Creator</div>
+
+    <div class="hero-desc">
+        Hello! My name is Vimal Mandal. Having just completed my 12th-grade education, 
+        I built this website from scratch to showcase my journey in coding, featuring 
+        Python-to-web conversions and interactive interfaces. Please explore the projects, 
+        have a try, and see how they work firsthand.
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-item">
+            <div class="stat-number">70B</div>
+            <div class="stat-label">Parameters</div>
         </div>
-    """, unsafe_allow_html=True)
+        <div class="stat-item">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Available</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">&#8734;</div>
+            <div class="stat-label">Knowledge</div>
+        </div>
+    </div>
 
-    col1, col2, col3 = st.columns([2, 2, 1])
-    with col1:
-        if st.button("🆕 New Chat", use_container_width=True):
-            st.session_state.messages = []
-            st.session_state.chat_loaded = False
-            st.rerun()
-    with col2:
-        if st.button("🏠 Home", use_container_width=True):
-            st.switch_page("app.py")
-    with col3:
-        if st.button("🚪 Logout", use_container_width=True):
-            st.session_state.logged_in = False
-            st.session_state.user_email = None
-            st.session_state.user_name = None
-            st.session_state.messages = []
-            st.session_state.chat_loaded = False
-            st.rerun()
+    <div class="features-container">
+        <div class="feature-card">
+            <div class="feature-icon">&#129504;</div>
+            <div class="feature-title">Smart AI</div>
+            <div class="feature-text">Powered by Llama 3.3 70B - World class intelligence</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#128172;</div>
+            <div class="feature-title">Chat History</div>
+            <div class="feature-text">Remembers all your previous conversations</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#128274;</div>
+            <div class="feature-title">Secure Login</div>
+            <div class="feature-text">Login with Gmail - Your data is safe</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#9889;</div>
+            <div class="feature-title">Lightning Fast</div>
+            <div class="feature-text">Instant responses powered by Groq</div>
+        </div>
+    </div>
 
-    st.markdown("---")
+    <div class="footer-text">
+        &copy; 2024 Vimal Mandal | AI Chatbot Project | Built with &#10084;&#65039;
+    </div>
 
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+</div>
 
-    system_prompt = f"""You are an expert AI assistant built by Vimal Mandal as a personal AI project.
-    
-    Your expertise covers:
-    - Artificial Intelligence and Machine Learning
-    - Deep Learning and Neural Networks
-    - Computer Science and Programming
-    - Data Science and Analytics
-    - Web Development
-    - Mathematics and Statistics
-    - General Knowledge
-    
-    User: {name} ({email})
-    
-    Be intelligent, helpful, and clear. Think step by step. Always give your best answer."""
+</body>
+</html>
+"""
 
-    if not st.session_state.get("chat_loaded", False):
-        st.session_state.messages = [{"role": "system", "content": system_prompt}]
-        try:
-            chat_ref = db.collection("chats").document(email).collection("messages")
-            past_chats = chat_ref.order_by("timestamp").stream()
-            loaded_messages = []
-            for chat in past_chats:
-                chat_data = chat.to_dict()
-                loaded_messages.append({
-                    "role": chat_data["role"],
-                    "content": chat_data["content"]
-                })
-            if loaded_messages:
-                st.session_state.messages.extend(loaded_messages)
-                st.toast(f"📜 Loaded {len(loaded_messages)} previous messages!", icon="✅")
-        except Exception as e:
-            pass
-        st.session_state.chat_loaded = True
+# Render the full HTML page
+components.html(page_html, height=900, scrolling=True)
 
-    if not st.session_state.messages:
-        st.session_state.messages = [{"role": "system", "content": system_prompt}]
-
-    for message in st.session_state.messages:
-        if message["role"] != "system":
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-
-    if prompt := st.chat_input("Ask me anything..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        with st.chat_message("assistant"):
-            response_placeholder = st.empty()
-            full_response = ""
-            try:
-                completion = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=st.session_state.messages,
-                    temperature=0.7,
-                    max_tokens=2048,
-                    stream=True,
-                )
-                for chunk in completion:
-                    if chunk.choices[0].delta.content:
-                        full_response += chunk.choices[0].delta.content
-                        response_placeholder.markdown(full_response + "▌")
-                response_placeholder.markdown(full_response)
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
-                full_response = "Sorry, error occurred. Please try again."
-
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
-
-        try:
-            chat_ref = db.collection("chats").document(email).collection("messages")
-            chat_ref.add({"role": "user", "content": prompt, "timestamp": datetime.now().isoformat()})
-            chat_ref.add({"role": "assistant", "content": full_response, "timestamp": datetime.now().isoformat()})
-            user_ref = db.collection("users").document(email)
-            user_data = user_ref.get()
-            if user_data.exists:
-                current_count = user_data.to_dict().get("total_messages", 0)
-                user_ref.update({
-                    "total_messages": current_count + 1,
-                    "last_active": datetime.now().isoformat()
-                })
-        except Exception as e:
-            pass
-
-# Main Logic
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-if st.session_state.logged_in:
-    chat_section()
-else:
-    login_section()
+# Start Button
+st.markdown("")
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    if st.button("🚀 START CHATTING NOW", use_container_width=True, type="primary"):
+        st.switch_page("pages/2_Chat.py")
