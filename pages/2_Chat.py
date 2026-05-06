@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS with Glass Morphism
+# Custom CSS - FIXED
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
@@ -30,20 +30,10 @@ st.markdown("""
         background: #000000;
     }
     
-    /* Background Video */
-    .video-bg {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-        overflow: hidden;
-    }
-    
-    .video-bg::before {
+    /* Animated Background */
+    .stApp::before {
         content: '';
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         width: 100%;
@@ -52,55 +42,52 @@ st.markdown("""
             rgba(124, 58, 237, 0.3),
             rgba(0, 0, 0, 0.7),
             rgba(0, 245, 255, 0.2));
-        z-index: 1;
+        z-index: 0;
         animation: gradientShift 10s ease infinite;
     }
     
     @keyframes gradientShift {
-        0%, 100% { background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(0, 0, 0, 0.7), rgba(0, 245, 255, 0.2)); }
-        50% { background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(0, 0, 0, 0.7), rgba(255, 0, 168, 0.2)); }
+        0%, 100% { 
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(0, 0, 0, 0.7), rgba(0, 245, 255, 0.2)); 
+        }
+        50% { 
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.3), rgba(0, 0, 0, 0.7), rgba(255, 0, 168, 0.2)); 
+        }
     }
     
-    /* Liquid Glass Effect */
-    .liquid-glass {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1),
-                    0 8px 32px rgba(0, 0, 0, 0.3);
-        border-radius: 50px;
-        padding: 30px;
+    .main .block-container {
+        position: relative;
+        z-index: 10;
+        padding-top: 50px !important;
     }
     
     /* Login Heading */
     .login-heading {
         font-family: 'Instrument Serif', serif;
-        font-size: 64px;
+        font-size: 56px;
         color: white;
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
         letter-spacing: -0.02em;
         line-height: 1;
     }
     
     .login-subtitle {
-        color: rgba(255, 255, 255, 0.7);
+        color: rgba(255, 255, 255, 0.8);
         text-align: center;
         font-size: 16px;
-        margin-bottom: 40px;
+        margin-bottom: 30px;
     }
     
     /* Chat Header */
     .chat-header {
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.08);
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         padding: 20px 30px;
         border-radius: 25px;
         margin-bottom: 20px;
         text-align: center;
-        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
     }
     
     .chat-title {
@@ -111,8 +98,8 @@ st.markdown("""
     }
     
     .user-badge {
-        background: rgba(124, 58, 237, 0.2);
-        border: 1px solid rgba(124, 58, 237, 0.4);
+        background: rgba(124, 58, 237, 0.3);
+        border: 1px solid rgba(124, 58, 237, 0.6);
         border-radius: 20px;
         padding: 6px 16px;
         color: #fff;
@@ -120,31 +107,37 @@ st.markdown("""
         display: inline-block;
     }
     
-    /* Streamlit Inputs */
+    /* INPUT BOXES - WHITE BACKGROUND, BLACK TEXT */
     .stTextInput > div > div > input {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        border: 2px solid rgba(255, 255, 255, 0.5) !important;
         border-radius: 50px !important;
-        color: white !important;
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
         padding: 15px 25px !important;
         font-size: 16px !important;
-        backdrop-filter: blur(10px);
+        font-weight: 500 !important;
+        caret-color: #000000 !important;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        background: rgba(255, 255, 255, 1) !important;
+        border: 2px solid #7c3aed !important;
+        box-shadow: 0 0 20px rgba(124, 58, 237, 0.5) !important;
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
     }
     
     .stTextInput > div > div > input::placeholder {
-        color: rgba(255, 255, 255, 0.4) !important;
-    }
-    
-    .stTextInput label {
-        color: white !important;
-        font-weight: 500 !important;
+        color: rgba(0, 0, 0, 0.5) !important;
+        font-weight: 400 !important;
     }
     
     /* Buttons */
     .stButton > button {
         background: rgba(255, 255, 255, 0.1) !important;
         backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 50px !important;
         color: white !important;
         font-weight: 500 !important;
@@ -155,25 +148,36 @@ st.markdown("""
     .stButton > button:hover {
         background: rgba(255, 255, 255, 0.2) !important;
         transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3);
+        box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
     }
     
     /* Chat messages */
     [data-testid="stChatMessage"] {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 20px !important;
         padding: 15px !important;
         margin: 10px 0 !important;
+        color: white !important;
     }
     
-    /* Chat input */
-    [data-testid="stChatInput"] textarea {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    [data-testid="stChatMessage"] p,
+    [data-testid="stChatMessage"] div {
         color: white !important;
-        backdrop-filter: blur(20px);
+    }
+    
+    /* Chat input - WHITE BACKGROUND, BLACK TEXT */
+    [data-testid="stChatInput"] textarea {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border: 2px solid rgba(255, 255, 255, 0.5) !important;
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        font-weight: 500 !important;
+    }
+    
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: rgba(0, 0, 0, 0.5) !important;
     }
     
     /* All text white */
@@ -181,12 +185,23 @@ st.markdown("""
         color: white !important;
     }
     
+    /* HIDE ANCHOR LINKS NEXT TO HEADINGS */
+    h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+        display: none !important;
+    }
+    
+    .stMarkdown h1 a,
+    .stMarkdown h2 a,
+    .stMarkdown h3 a {
+        display: none !important;
+    }
+    
+    /* Hide any link icons */
+    [data-testid="stHeaderActionElements"] {
+        display: none !important;
+    }
+    
     </style>
-""", unsafe_allow_html=True)
-
-# Animated Background
-st.markdown("""
-    <div class="video-bg"></div>
 """, unsafe_allow_html=True)
 
 # Initialize Firebase
@@ -213,10 +228,8 @@ def login_section():
         st.markdown('<h1 class="login-heading">Built for the curious</h1>', unsafe_allow_html=True)
         st.markdown('<p class="login-subtitle">Login to start your AI journey with Vimal\'s personalized chatbot</p>', unsafe_allow_html=True)
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        email = st.text_input("Email", placeholder="Enter your Gmail", label_visibility="collapsed")
-        name = st.text_input("Name", placeholder="Enter your Name", label_visibility="collapsed")
+        email = st.text_input("Email", placeholder="Enter your Gmail", label_visibility="collapsed", key="email_input")
+        name = st.text_input("Name", placeholder="Enter your Name", label_visibility="collapsed", key="name_input")
 
         if st.button("🚀 Login & Start Chatting", use_container_width=True):
             if email and "@gmail.com" in email and name:
