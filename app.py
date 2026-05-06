@@ -3,13 +3,13 @@ import streamlit.components.v1 as components
 
 # Page Config
 st.set_page_config(
-    page_title="Vimal Mandal - 3D AI Creator",
+    page_title="Vimal Mandal - AI Creator",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Hide Streamlit elements
+# Hide Streamlit elements and remove ALL spacing
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -17,9 +17,57 @@ st.markdown("""
     header {visibility: hidden;}
     [data-testid="collapsedControl"] {display: none;}
     [data-testid="stSidebar"] {display: none;}
-    .stApp {background: #0C0C0C;}
-    .main .block-container {padding: 0 !important; max-width: 100% !important;}
+    
+    .stApp {
+        background: #0C0C0C;
+    }
+    
+    .main .block-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    
     .stApp > header {display: none;}
+    
+    /* Remove iframe spacing */
+    iframe {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Remove all element gaps */
+    [data-testid="stVerticalBlock"] {
+        gap: 0 !important;
+    }
+    
+    [data-testid="element-container"] {
+        margin: 0 !important;
+    }
+    
+    /* Style the floating button */
+    .stButton > button {
+        background: linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%) !important;
+        color: white !important;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        font-weight: 600 !important;
+        padding: 18px 60px !important;
+        border-radius: 50px !important;
+        border: 2px solid white !important;
+        font-size: 18px !important;
+        box-shadow: 0 0 40px rgba(181, 1, 167, 0.5);
+        font-family: 'Kanit', sans-serif !important;
+        margin-top: -100px !important;
+        position: relative;
+        z-index: 1000;
+    }
+    
+    .stButton > button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 60px rgba(181, 1, 167, 0.8);
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -42,8 +90,11 @@ body, html {
     background: #0C0C0C;
     color: white;
     overflow-x: hidden;
+    margin: 0;
+    padding: 0;
 }
 
+/* HERO SECTION */
 .hero-container {
     min-height: 100vh;
     background: #0C0C0C;
@@ -53,7 +104,6 @@ body, html {
     position: relative;
 }
 
-/* Navbar */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -77,7 +127,6 @@ body, html {
     opacity: 0.7;
 }
 
-/* Hero Heading */
 .hero-heading {
     font-size: 17vw;
     font-weight: 900;
@@ -101,7 +150,6 @@ body, html {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Portrait Image */
 .portrait {
     position: absolute;
     left: 50%;
@@ -120,7 +168,6 @@ body, html {
     transform: translateX(-50%) scale(1.05);
 }
 
-/* Bottom Bar */
 .bottom-bar {
     display: flex;
     justify-content: space-between;
@@ -144,7 +191,6 @@ body, html {
     animation-delay: 0.9s;
 }
 
-/* Contact Button */
 .contact-btn {
     background: linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%);
     color: white;
@@ -174,101 +220,9 @@ body, html {
     transform: scale(1.05);
 }
 
-/* About Section */
-.about-section {
-    min-height: 100vh;
-    padding: 100px 40px;
-    background: #0C0C0C;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 60px;
-    position: relative;
-}
-
-.about-heading {
-    font-size: clamp(3rem, 12vw, 160px);
-    font-weight: 900;
-    text-transform: uppercase;
-    background: linear-gradient(180deg, #646973 0%, #BBCCD7 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    text-align: center;
-}
-
-.about-text {
-    color: #D7E2EA;
-    font-weight: 500;
-    text-align: center;
-    line-height: 1.6;
-    max-width: 600px;
-    font-size: clamp(1rem, 2vw, 1.4rem);
-}
-
-/* Services Section */
-.services-section {
-    background: #FFFFFF;
-    border-top-left-radius: 60px;
-    border-top-right-radius: 60px;
-    padding: 100px 40px;
-    color: #0C0C0C;
-}
-
-.services-heading {
-    font-size: clamp(3rem, 12vw, 160px);
-    font-weight: 900;
-    text-transform: uppercase;
-    color: #0C0C0C;
-    text-align: center;
-    margin-bottom: 80px;
-    line-height: 1;
-}
-
-.service-list {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.service-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 40px;
-    padding: 40px 0;
-    border-bottom: 1px solid rgba(12, 12, 12, 0.15);
-}
-
-.service-num {
-    font-size: clamp(3rem, 8vw, 100px);
-    font-weight: 900;
-    color: #0C0C0C;
-    min-width: 150px;
-}
-
-.service-content {
-    flex: 1;
-}
-
-.service-name {
-    font-size: clamp(1.2rem, 2.5vw, 2rem);
-    font-weight: 500;
-    text-transform: uppercase;
-    margin-bottom: 15px;
-}
-
-.service-desc {
-    font-size: clamp(0.9rem, 1.5vw, 1.2rem);
-    font-weight: 300;
-    line-height: 1.6;
-    opacity: 0.6;
-    max-width: 700px;
-}
-
-/* Marquee */
+/* MARQUEE */
 .marquee-section {
-    padding: 60px 0;
+    padding: 40px 0;
     background: #0C0C0C;
     overflow: hidden;
 }
@@ -299,7 +253,6 @@ body, html {
     width: 380px;
     height: 240px;
     border-radius: 20px;
-    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -316,6 +269,108 @@ body, html {
 .marquee-tile-4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
 .marquee-tile-5 { background: linear-gradient(135deg, #fa709a, #fee140); }
 .marquee-tile-6 { background: linear-gradient(135deg, #30cfd0, #330867); }
+
+/* ABOUT SECTION */
+.about-section {
+    padding: 80px 40px;
+    background: #0C0C0C;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    position: relative;
+}
+
+.about-heading {
+    font-size: clamp(3rem, 12vw, 160px);
+    font-weight: 900;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, #646973 0%, #BBCCD7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-align: center;
+}
+
+.about-text {
+    color: #D7E2EA;
+    font-weight: 400;
+    text-align: center;
+    line-height: 1.7;
+    max-width: 750px;
+    font-size: clamp(1rem, 1.5vw, 1.3rem);
+    padding: 0 20px;
+}
+
+/* SERVICES SECTION */
+.services-section {
+    background: #FFFFFF;
+    border-top-left-radius: 60px;
+    border-top-right-radius: 60px;
+    padding: 80px 40px;
+    color: #0C0C0C;
+}
+
+.services-heading {
+    font-size: clamp(3rem, 12vw, 160px);
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #0C0C0C;
+    text-align: center;
+    margin-bottom: 60px;
+    line-height: 1;
+}
+
+.service-list {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.service-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+    padding: 30px 0;
+    border-bottom: 1px solid rgba(12, 12, 12, 0.15);
+}
+
+.service-num {
+    font-size: clamp(3rem, 8vw, 100px);
+    font-weight: 900;
+    color: #0C0C0C;
+    min-width: 150px;
+    line-height: 1;
+}
+
+.service-content {
+    flex: 1;
+}
+
+.service-name {
+    font-size: clamp(1.2rem, 2.5vw, 2rem);
+    font-weight: 500;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+.service-desc {
+    font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+    font-weight: 300;
+    line-height: 1.6;
+    opacity: 0.6;
+    max-width: 700px;
+}
+
+/* FOOTER */
+.footer-section {
+    background: #0C0C0C;
+    padding: 40px;
+    text-align: center;
+    color: #646973;
+    font-size: 0.9rem;
+}
 
 </style>
 </head>
@@ -378,11 +433,11 @@ body, html {
 <div class="about-section">
     <h2 class="about-heading">About Me</h2>
     <p class="about-text">
-        With a passion for AI and innovation, I built this intelligent chatbot using cutting-edge 
-        Llama 3.3 70B model. I focus on creating AI experiences that are powerful, intuitive, and 
-        truly helpful. Let's build something incredible together!
+        Hello! My name is Vimal Mandal. Having just completed my 12th-grade education, 
+        I built this website from scratch to showcase my journey in coding, featuring 
+        Python-to-web conversions and interactive interfaces. Please explore the projects, 
+        have a try, and see how they work firsthand.
     </p>
-    <button class="contact-btn">Start Chatting</button>
 </div>
 
 <!-- SERVICES SECTION -->
@@ -427,36 +482,19 @@ body, html {
     </div>
 </div>
 
+<!-- FOOTER -->
+<div class="footer-section">
+    © 2024 Vimal Mandal | Built with passion using Python, Streamlit & AI
+</div>
+
 </body>
 </html>
 """
 
-# Render the HTML
-components.html(hero_html, height=2400, scrolling=True)
+# Render the HTML (exact height to remove blank space)
+components.html(hero_html, height=2150, scrolling=True)
 
-# Floating Start Chat Button (Streamlit native)
-st.markdown("""
-    <style>
-    .stButton > button {
-        background: linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%) !important;
-        color: white !important;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        font-weight: 600 !important;
-        padding: 18px 60px !important;
-        border-radius: 50px !important;
-        border: 2px solid white !important;
-        font-size: 18px !important;
-        box-shadow: 0 0 40px rgba(181, 1, 167, 0.5);
-        font-family: 'Kanit', sans-serif !important;
-    }
-    .stButton > button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 60px rgba(181, 1, 167, 0.8);
-    }
-    </style>
-""", unsafe_allow_html=True)
-
+# Floating Start Chat Button
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     if st.button("🚀 START CHATTING NOW", use_container_width=True):
